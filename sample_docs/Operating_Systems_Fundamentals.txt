@@ -1,0 +1,19 @@
+CHAPTER 1: INTRODUCTION TO OPERATING SYSTEMS
+
+1.1 Process Management
+A Process is defined as a program in execution. Operating systems manage process execution through process control blocks (PCB).
+Process Scheduling determines which process runs on the CPU. Shortest Job First (SJF) and Round Robin (RR) are primary scheduling algorithms.
+
+1.2 Memory Management
+Physical Memory refers to the actual RAM hardware installed on the computer system.
+Virtual Memory is defined as a memory management technique that provides an idealized abstraction of storage resources.
+Page Tables refer to the data structure used by a virtual memory system in a computer operating system to store the mapping between virtual addresses and physical addresses.
+
+CHAPTER 2: ADVANCED STORAGE & CONCURRENCY
+
+2.1 Deadlocks
+Deadlock refers to a situation where a set of processes are blocked because each process is holding a resource and waiting for another resource held by some other process.
+Banker's Algorithm is a resource allocation and deadlock avoidance algorithm that tests for safety by simulating the allocation for predetermined maximum possible amounts of all resources.
+
+2.2 File System Architecture
+Inode is a data structure on a filesystem that stores metadata about a file or directory.
