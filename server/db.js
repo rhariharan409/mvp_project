@@ -18,6 +18,9 @@ export async function initDatabase() {
     sqlDb = new SQL.Database();
   }
 
+  // Enable SQLite foreign key enforcement
+  try { sqlDb.run('PRAGMA foreign_keys = ON;'); } catch (e) {}
+
   // Create database tables
   sqlDb.run(`
     CREATE TABLE IF NOT EXISTS users (
@@ -250,13 +253,15 @@ function saveDb() {
 }
 
 // Wrapper matching better-sqlite3 API
+const sanitizeParams = (params) => params.flat().map(p => (p === undefined ? null : p));
+
 const db = {
   prepare(sql) {
     return {
       all(...params) {
         if (!sqlDb) throw new Error('Database not initialized');
         const stmt = sqlDb.prepare(sql);
-        stmt.bind(params.flat());
+        stmt.bind(sanitizeParams(params));
         const results = [];
         while (stmt.step()) {
           results.push(stmt.getAsObject());
@@ -267,7 +272,7 @@ const db = {
       get(...params) {
         if (!sqlDb) throw new Error('Database not initialized');
         const stmt = sqlDb.prepare(sql);
-        stmt.bind(params.flat());
+        stmt.bind(sanitizeParams(params));
         let result = undefined;
         if (stmt.step()) {
           result = stmt.getAsObject();
@@ -277,7 +282,7 @@ const db = {
       },
       run(...params) {
         if (!sqlDb) throw new Error('Database not initialized');
-        sqlDb.run(sql, params.flat());
+        sqlDb.run(sql, sanitizeParams(params));
         saveDb();
         return { changes: sqlDb.getRowsModified() };
       }
@@ -291,17 +296,24 @@ const db = {
   transaction(fn) {
     return (...args) => {
       if (!sqlDb) throw new Error('Database not initialized');
-      inTransaction = true;
-      sqlDb.exec('BEGIN TRANSACTION;');
+      const wasInTransaction = inTransaction;
+      if (!wasInTransaction) {
+        inTransaction = true;
+        sqlDb.exec('BEGIN TRANSACTION;');
+      }
       try {
         const res = fn(...args);
-        sqlDb.exec('COMMIT;');
-        inTransaction = false;
-        saveDb();
+        if (!wasInTransaction) {
+          sqlDb.exec('COMMIT;');
+          inTransaction = false;
+          saveDb();
+        }
         return res;
       } catch (err) {
-        try { sqlDb.exec('ROLLBACK;'); } catch (rErr) {}
-        inTransaction = false;
+        if (!wasInTransaction) {
+          try { sqlDb.exec('ROLLBACK;'); } catch (rErr) {}
+          inTransaction = false;
+        }
         throw err;
       }
     };

@@ -26,7 +26,7 @@ router.get('/:id', (req, res) => {
 // POST /api/assessments/submit
 router.post('/submit', (req, res) => {
   try {
-    const { userId = 'user_student_1', assessmentId, userAnswers } = req.body;
+    const { userId = 'user_student_1', assessmentId, userAnswers = [] } = req.body;
     
     const assessment = db.prepare('SELECT * FROM assessments WHERE id = ?').get(assessmentId);
     if (!assessment) return res.status(404).json({ error: 'Assessment not found' });
@@ -34,7 +34,8 @@ router.post('/submit', (req, res) => {
     const questions = db.prepare('SELECT * FROM questions WHERE assessment_id = ?').all(assessmentId);
     
     let score = 0;
-    const evaluatedAnswers = userAnswers.map(ans => {
+    const safeUserAnswers = Array.isArray(userAnswers) ? userAnswers : [];
+    const evaluatedAnswers = safeUserAnswers.map(ans => {
       const q = questions.find(item => item.id === ans.question_id);
       const isCorrect = q ? q.correct_answer.trim().toLowerCase() === String(ans.user_answer).trim().toLowerCase() : false;
       if (isCorrect) score += 1;

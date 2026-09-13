@@ -18,7 +18,7 @@ export default function App() {
   const [hasApiKey, setHasApiKey] = useState(false);
 
   // Modals
-  const [diagnosticId, setDiagnosticId] = useState(null);
+  const [diagnosticInfo, setDiagnosticInfo] = useState(null); // { id, courseId }
   const [groundingSource, setGroundingSource] = useState(null); // { pageNumber, chunkContent }
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -45,7 +45,7 @@ export default function App() {
     try {
       const data = await getCourseDetails(courseId);
       if (data.diagnostic_id) {
-        setDiagnosticId(data.diagnostic_id);
+        setDiagnosticInfo({ id: data.diagnostic_id, courseId });
       }
     } catch (err) {
       console.error('Failed to start diagnostic:', err);
@@ -102,11 +102,15 @@ export default function App() {
       </main>
 
       {/* Modals */}
-      {diagnosticId && (
+      {diagnosticInfo && (
         <DiagnosticModal
-          assessmentId={diagnosticId}
-          onClose={() => setDiagnosticId(null)}
-          onComplete={() => setActiveView('dashboard')}
+          assessmentId={diagnosticInfo.id}
+          onClose={() => setDiagnosticInfo(null)}
+          onComplete={() => {
+            const cId = diagnosticInfo.courseId;
+            setDiagnosticInfo(null);
+            if (cId) handleSelectCourse(cId);
+          }}
         />
       )}
 

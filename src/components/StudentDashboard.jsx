@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Award, Zap, AlertTriangle, CheckCircle, Clock, Flame, ArrowRight, Sparkles, Plus, Play, RefreshCw, BarChart } from 'lucide-react';
-import { getLearnerDashboard } from '../api/client';
+import { BookOpen, Award, Zap, AlertTriangle, CheckCircle, Clock, Flame, ArrowRight, Sparkles, Plus, Play, RefreshCw, BarChart, Trash2 } from 'lucide-react';
+import { getLearnerDashboard, deleteCourse } from '../api/client';
 
 export default function StudentDashboard({ onSelectCourse, onStartDiagnostic, onStartQuiz, onNavigateUpload }) {
   const [dashboard, setDashboard] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
 
   const fetchDashboard = async () => {
     setIsLoading(true);
@@ -15,6 +16,19 @@ export default function StudentDashboard({ onSelectCourse, onStartDiagnostic, on
       console.error('Error fetching dashboard:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteCourse = async (courseId, title) => {
+    if (!window.confirm(`Are you sure you want to delete course "${title}"?`)) return;
+    setDeletingId(courseId);
+    try {
+      await deleteCourse(courseId);
+      await fetchDashboard();
+    } catch (err) {
+      alert('Failed to delete course: ' + err.message);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -209,6 +223,15 @@ export default function StudentDashboard({ onSelectCourse, onStartDiagnostic, on
                         title="Start Diagnostic Assessment"
                       >
                         Diagnostic
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteCourse(crs.id, crs.title)}
+                        disabled={deletingId === crs.id}
+                        className="p-2 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/60 text-xs transition-all disabled:opacity-50"
+                        title="Delete Course"
+                      >
+                        {deletingId === crs.id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                       </button>
                     </div>
                   </div>

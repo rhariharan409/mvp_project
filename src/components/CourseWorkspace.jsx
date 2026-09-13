@@ -4,6 +4,7 @@ import mermaid from 'mermaid';
 import { getCourseDetails, regenerateLessonExplanation, logLearningActivity, askTutor } from '../api/client';
 import KnowledgeGraph from './KnowledgeGraph';
 import AITutorDrawer from './AITutorDrawer';
+import MarkdownRenderer from './MarkdownRenderer';
 
 // Initialize mermaid library
 mermaid.initialize({
@@ -167,10 +168,20 @@ export default function CourseWorkspace({ courseId, initialLessonId, onInspectSo
   let activeLearningData = {};
 
   try {
-    if (activeLesson?.content?.startsWith('{')) {
-      lessonModes = JSON.parse(activeLesson.content);
-    } else {
-      lessonModes = { simple: activeLesson?.content || '' };
+    if (activeLesson?.content) {
+      let rawContent = activeLesson.content.trim();
+      if (rawContent.startsWith('{')) {
+        const parsed = JSON.parse(rawContent);
+        if (parsed.modes) {
+          lessonModes = parsed.modes;
+        } else if (parsed.simple || parsed.detailed || parsed.exam_mode || parsed.deep_dive) {
+          lessonModes = parsed;
+        } else {
+          lessonModes = { simple: rawContent };
+        }
+      } else {
+        lessonModes = { simple: rawContent };
+      }
     }
   } catch (e) {
     lessonModes = { simple: activeLesson?.content || '' };
@@ -371,9 +382,7 @@ export default function CourseWorkspace({ courseId, initialLessonId, onInspectSo
 
               {/* Main Markdown Content View */}
               <div className="glass-card p-6 md:p-8 rounded-2xl border border-slate-800 space-y-6 text-slate-200 text-sm leading-relaxed">
-                <div className="whitespace-pre-wrap font-sans space-y-4">
-                  {activeMarkdown}
-                </div>
+                <MarkdownRenderer content={activeMarkdown} />
 
                 {/* VISUAL LEARNING MERMAID DIAGRAM */}
                 {activeLesson.visual_suggestion && (

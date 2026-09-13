@@ -17,7 +17,11 @@ export default function KnowledgeGraph({ concepts = [], relationships = [], onIn
 
   // Compute node coordinates in SVG canvas
   const nodeCount = concepts.length;
-  const cols = Math.ceil(Math.sqrt(nodeCount * 1.5));
+  const cols = Math.max(1, Math.ceil(Math.sqrt(nodeCount * 1.5)));
+  const totalRows = Math.ceil(nodeCount / cols);
+  const svgWidth = Math.max(800, cols * 220 + 160);
+  const svgHeight = Math.max(500, (totalRows + 1) * 150);
+
   const nodesWithCoords = concepts.map((concept, idx) => {
     const col = idx % cols;
     const row = Math.floor(idx / cols);
@@ -60,7 +64,7 @@ export default function KnowledgeGraph({ concepts = [], relationships = [], onIn
 
       {/* Main SVG Graph Canvas */}
       <div className="glass-panel rounded-2xl border border-slate-800 overflow-x-auto min-h-[500px] relative bg-slate-950/80 p-4">
-        <svg className="w-full min-w-[800px] h-[550px]">
+        <svg style={{ width: `${svgWidth}px`, height: `${svgHeight}px` }} className="w-full">
           <defs>
             <marker
               id="arrowhead"

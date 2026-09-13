@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Bot, Send, Sparkles, HelpCircle, BookOpen, Lightbulb, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
 import { askTutor } from '../api/client';
+import MarkdownRenderer from './MarkdownRenderer';
 
 const ACTION_CHIPS = [
   { id: 'explain_simply', label: 'Explain Simply', icon: BookOpen },
@@ -101,7 +102,11 @@ export default function AITutorDrawer({ courseId, activeLessonTitle }) {
                   : 'bg-slate-900/90 text-slate-200 border border-slate-800 rounded-bl-none space-y-2'
               }`}
             >
-              <div className="whitespace-pre-wrap leading-relaxed">{msg.text}</div>
+              {msg.sender === 'user' ? (
+                <div className="whitespace-pre-wrap leading-relaxed">{msg.text}</div>
+              ) : (
+                <MarkdownRenderer content={msg.text} />
+              )}
               
               {msg.citation && (
                 <div className="pt-2 border-t border-slate-800 text-[10px] text-blue-400 font-medium flex items-center space-x-1">

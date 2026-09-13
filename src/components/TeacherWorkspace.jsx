@@ -1,24 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { GraduationCap, BookOpen, Layers, Users, Trash2, Plus, Edit, AlertTriangle } from 'lucide-react';
-import { getCoursesList } from '../api/client';
+import { GraduationCap, BookOpen, Layers, Users, Trash2, Plus, Edit, AlertTriangle, RefreshCw } from 'lucide-react';
+import { getCoursesList, deleteCourse } from '../api/client';
 
 export default function TeacherWorkspace({ onNavigateUpload, onSelectCourse }) {
   const [courses, setCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getCoursesList();
+      setCourses(data);
+    } catch (err) {
+      console.error('Error loading teacher workspace:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        const data = await getCoursesList();
-        setCourses(data);
-      } catch (err) {
-        console.error('Error loading teacher workspace:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    }
     loadData();
   }, []);
+
+  const handleDeleteCourse = async (courseId, title) => {
+    if (!window.confirm(`Are you sure you want to delete course "${title}"?`)) return;
+    setDeletingId(courseId);
+    try {
+      await deleteCourse(courseId);
+      await loadData();
+    } catch (err) {
+      alert('Failed to delete course: ' + err.message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 space-y-8">
@@ -63,13 +79,22 @@ export default function TeacherWorkspace({ onNavigateUpload, onSelectCourse }) {
                   </div>
                 </div>
 
-                <div className="pt-2">
+                <div className="pt-2 flex items-center space-x-2">
                   <button
                     onClick={() => onSelectCourse(crs.id)}
-                    className="w-full py-2 bg-purple-950/60 hover:bg-purple-900/60 text-purple-200 border border-purple-800 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition-all"
+                    className="flex-1 py-2 bg-purple-950/60 hover:bg-purple-900/60 text-purple-200 border border-purple-800 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition-all"
                   >
                     <Edit className="w-3.5 h-3.5" />
-                    <span>Inspect & Edit Course</span>
+                    <span>Inspect Course</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleDeleteCourse(crs.id, crs.title)}
+                    disabled={deletingId === crs.id}
+                    className="p-2 bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/60 rounded-xl text-xs transition-all disabled:opacity-50"
+                    title="Delete Course"
+                  >
+                    {deletingId === crs.id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>

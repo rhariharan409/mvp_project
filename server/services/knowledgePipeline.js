@@ -138,7 +138,11 @@ export async function processMaterialPipeline(materialId, filePath, fileType, us
         // Store Concepts for this lesson
         for (let con of (les.concepts || [])) {
           const conceptId = `con_${uuidv4()}`;
-          const matchingChunk = dbChunks.find(c => JSON.parse(c.metadata || '{}').page_number === con.source_page) || dbChunks[0];
+          const matchingChunk = dbChunks.find(c => {
+            try {
+              return JSON.parse(c.metadata || '{}').page_number === con.source_page;
+            } catch (e) { return false; }
+          }) || dbChunks[0];
           
           db.prepare(`
             INSERT INTO concepts (id, course_id, lesson_id, name, definition, difficulty, importance, source_page, source_chunk_id)

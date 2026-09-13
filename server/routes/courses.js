@@ -106,7 +106,11 @@ router.post('/:id/regenerate-explanation', async (req, res) => {
 // DELETE /api/courses/:id
 router.delete('/:id', (req, res) => {
   try {
+    const course = db.prepare('SELECT material_id FROM courses WHERE id = ?').get(req.params.id);
     db.prepare('DELETE FROM courses WHERE id = ?').run(req.params.id);
+    if (course?.material_id) {
+      db.prepare('DELETE FROM materials WHERE id = ?').run(course.material_id);
+    }
     res.json({ message: 'Course deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -107,3 +107,11 @@ export async function updateSettings(settings) {
   });
   return res.json();
 }
+
+export async function deleteCourse(courseId) {
+  const res = await fetch(`${API_BASE}/courses/${courseId}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) throw new Error('Failed to delete course');
+  return res.json();
+}

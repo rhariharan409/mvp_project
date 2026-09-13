@@ -81,7 +81,15 @@ export default function Header({ activeView, setActiveView, currentRole, setCurr
         <div className="flex items-center space-x-3">
           {/* Role Toggle Button */}
           <button
-            onClick={() => setCurrentRole(currentRole === 'student' ? 'teacher' : 'student')}
+            onClick={() => {
+              if (currentRole === 'student') {
+                setCurrentRole('teacher');
+                setActiveView('teacher');
+              } else {
+                setCurrentRole('student');
+                setActiveView('dashboard');
+              }
+            }}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 border transition-all ${
               currentRole === 'student'
                 ? 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-600'

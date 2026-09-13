@@ -41,23 +41,26 @@ export async function parseDocument(filePath, fileType, progressCallback = () =>
 async function parsePdf(buffer, progressCallback) {
   progressCallback('Extracting text from PDF...');
   
-  // Custom page render function to capture page boundaries
   let pageTexts = [];
   
-  const renderPage = (pageData) => {
-    return pageData.getTextContent().then((textContent) => {
+  const renderPage = async (pageData) => {
+    try {
+      const textContent = await pageData.getTextContent();
       let lastY, text = '';
       for (let item of textContent.items) {
-        if (lastY == item.transform[5] || !lastY) {
+        if (lastY === item.transform[5] || !lastY) {
           text += item.str + ' ';
         } else {
           text += '\n' + item.str + ' ';
         }
         lastY = item.transform[5];
       }
-      pageTexts.push(text.trim());
-      return text;
-    });
+      const clean = text.trim();
+      pageTexts.push(clean);
+      return clean;
+    } catch (err) {
+      return '';
+    }
   };
 
   try {
@@ -71,8 +74,11 @@ async function parsePdf(buffer, progressCallback) {
         
         // OCR fallback if text is virtually empty (scanned PDF page)
         if (text.length < 25) {
-          progressCallback(`Running OCR fallback on PDF page ${i + 1}...`);
-          text = await runOcrFallback(buffer, i + 1) || text;
+          progressCallback(`Checking OCR fallback for PDF page ${i + 1}...`);
+          const ocrText = await runOcrFallback(buffer, i + 1);
+          if (ocrText && ocrText.length > text.length) {
+            text = ocrText;
+          }
         }
 
         pages.push({
@@ -83,9 +89,9 @@ async function parsePdf(buffer, progressCallback) {
         progressCallback(`Processed PDF page ${i + 1}/${pageTexts.length}`);
       }
     } else {
-      // Fallback split by page breaks
+      // Fallback split by form feed or double newlines
       const fullText = data.text || '';
-      const splitPages = fullText.split(/\n\s*\n\f|\f/);
+      const splitPages = fullText.split(/\n\s*\n\f|\f|\n{3,}/).filter(p => p.trim());
       for (let i = 0; i < splitPages.length; i++) {
         const text = splitPages[i] || '';
         pages.push({
@@ -99,7 +105,7 @@ async function parsePdf(buffer, progressCallback) {
     if (pages.length === 0) {
       pages.push({
         page_number: 1,
-        text: cleanText(data.text || ''),
+        text: cleanText(data.text || 'Extracted document content'),
         chars_count: (data.text || '').length
       });
     }

@@ -30,10 +30,12 @@ export async function callLLM(prompt, jsonSchema = null, apiKeyOverride = null) 
     });
 
     const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    let text = result.response.text();
 
     if (jsonSchema) {
       try {
+        // Strip Markdown code blocks if wrapped by LLM
+        text = text.replace(/```json\s*/g, '').replace(/```\s*$/g, '').trim();
         return JSON.parse(text);
       } catch (parseErr) {
         console.warn('LLM JSON parse error, attempting extraction regex:', parseErr.message);
@@ -183,10 +185,23 @@ function generateDeterministicKnowledgeStructure(chunks) {
     { name: 'Advanced Applications', definition: 'System workflows and optimization patterns', source_page: 2, source_chunk_id: chunks[1]?.id || chunks[0]?.id || '', difficulty: 4, importance: 4 }
   ];
 
-  const chunkSize = Math.ceil(totalConcepts.length / 3);
+  const chunkSize = Math.max(1, Math.ceil(totalConcepts.length / 3));
   const m1Concepts = totalConcepts.slice(0, chunkSize);
   const m2Concepts = totalConcepts.slice(chunkSize, chunkSize * 2);
   const m3Concepts = totalConcepts.slice(chunkSize * 2);
+
+  const safeSlice = (arr, start, end) => {
+    const res = arr.slice(start, end);
+    if (res.length > 0) return res;
+    return arr.length > 0 ? [arr[0]] : [totalConcepts[0]];
+  };
+
+  const l11Concepts = safeSlice(m1Concepts, 0, Math.max(1, Math.ceil(m1Concepts.length / 2)));
+  const l12Concepts = safeSlice(m1Concepts, Math.ceil(m1Concepts.length / 2));
+  const l21Concepts = safeSlice(m2Concepts.length > 0 ? m2Concepts : totalConcepts, 0, Math.max(1, Math.ceil((m2Concepts.length || 1) / 2)));
+  const l22Concepts = safeSlice(m2Concepts.length > 0 ? m2Concepts : totalConcepts, Math.ceil((m2Concepts.length || 1) / 2));
+  const l31Concepts = safeSlice(m3Concepts.length > 0 ? m3Concepts : totalConcepts, 0, Math.max(1, Math.ceil((m3Concepts.length || 1) / 2)));
+  const l32Concepts = safeSlice(m3Concepts.length > 0 ? m3Concepts : totalConcepts, Math.ceil((m3Concepts.length || 1) / 2));
 
   const modules = [
     {
@@ -194,14 +209,14 @@ function generateDeterministicKnowledgeStructure(chunks) {
       description: `Fundamental overview and core principles of ${subject}.`,
       lessons: [
         {
-          title: `Lesson 1.1: Introduction to ${m1Concepts[0]?.name || subject}`,
-          summary: `Explores ${m1Concepts.map(c => c.name).join(', ')}.`,
-          concepts: m1Concepts.slice(0, Math.ceil(m1Concepts.length / 2))
+          title: `Lesson 1.1: Introduction to ${l11Concepts[0]?.name || subject}`,
+          summary: `Explores ${l11Concepts.map(c => c.name).join(', ')}.`,
+          concepts: l11Concepts
         },
         {
           title: `Lesson 1.2: Essential Mechanics & Concepts`,
           summary: `Dives into underlying operational mechanisms.`,
-          concepts: m1Concepts.slice(Math.ceil(m1Concepts.length / 2))
+          concepts: l12Concepts
         }
       ]
     },
@@ -212,12 +227,12 @@ function generateDeterministicKnowledgeStructure(chunks) {
         {
           title: `Lesson 2.1: System Architecture`,
           summary: `Focuses on internal workflows and state transitions.`,
-          concepts: m2Concepts.slice(0, Math.ceil(m2Concepts.length / 2))
+          concepts: l21Concepts
         },
         {
           title: `Lesson 2.2: Advanced Mechanisms`,
           summary: `Examines execution policies and algorithms.`,
-          concepts: m2Concepts.slice(Math.ceil(m2Concepts.length / 2))
+          concepts: l22Concepts
         }
       ]
     },
@@ -228,12 +243,12 @@ function generateDeterministicKnowledgeStructure(chunks) {
         {
           title: `Lesson 3.1: Real-World Applications`,
           summary: `Implementation scenarios and practical examples.`,
-          concepts: m3Concepts.slice(0, Math.ceil(m3Concepts.length / 2))
+          concepts: l31Concepts
         },
         {
           title: `Lesson 3.2: Synthesis & Master Evaluation`,
           summary: `Comprehensive evaluation and edge cases.`,
-          concepts: m3Concepts.slice(Math.ceil(m3Concepts.length / 2))
+          concepts: l32Concepts
         }
       ]
     }
